@@ -25,7 +25,7 @@ def scrape_seaports_cordinates():
     driver.get(url)
 
     # Total number of pages is 97
-    n = 97
+    n = 4
 
     # Open each page, get the table with the data and merge with the others.
     data = []
@@ -52,7 +52,9 @@ def scrape_seaports_cordinates():
     driver.quit()
 
     # Transform the collected data in a Dataframe and returns it
-    return pd.DataFrame(data, columns=["port_name", "port_code", "country", "lat", "lon"])
+    return pd.DataFrame(
+        data, columns=["port_name", "port_code", "country", "lat", "lon"]
+    )
 
 
 def get_seaports_converted_cordinates():
@@ -73,20 +75,25 @@ def get_seaports_converted_cordinates():
         """
         side = coordinate_degrees[-1]
         cordinate_full = f"{coordinate_degrees[:-1]}00.00{side}"
-        dm_str = re.sub(r'\s', '', cordinate_full)
+        dm_str = re.sub(r"\s", "", cordinate_full)
 
-        sign = -1 if re.search('[swSW]', dm_str) else 1
+        sign = -1 if re.search("[swSW]", dm_str) else 1
 
-        numbers = [*filter(len, re.split('\D+', dm_str, maxsplit=4))]
+        numbers = [*filter(len, re.split("\D+", dm_str, maxsplit=4))]
 
         degree = numbers[0]
-        minute = numbers[1] if len(numbers) >= 2 else '0'
-
-        return sign * (int(degree) + float(minute) / 60)
+        minute = numbers[1] if len(numbers) >= 2 else "0"
+        converted = sign * (int(degree) + float(minute) / 60)
+        return str(round(converted, 5))
 
     # Converts latitude and longitude to float
     df["lat_float"] = df["lat"].apply(apply_conversor_cordinates)
     df["lon_float"] = df["lon"].apply(apply_conversor_cordinates)
 
+    df["porto_id"] = df["port_code"] + "_" + df["port_name"]
+    df["porto_id"] = df["porto_id"].apply(lambda x: x.replace(" ", ""))
+    return df
+
+
 # test
-# get_seaports_converted_cordinates()
+get_seaports_converted_cordinates().to_excel("portos.xlsx", index=False)
